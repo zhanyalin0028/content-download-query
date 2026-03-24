@@ -220,20 +220,20 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>� 内容下载查询系统</h1>
-            <p>输入用户ID查询下载次数最高的前10个内容</p>
+            <h1>📊 内容下载查询系统</h1>
+            <p>输入稿定ID查询下载次数最高的前10个内容</p>
         </div>
 
         <div class="search-box">
             <div class="form-group">
-                <label for="userId">用户ID</label>
-                <input type="text" id="userId" placeholder="请输入用户ID">
+                <label for="userId">稿定ID</label>
+                <input type="text" id="userId" placeholder="请输入稿定ID">
             </div>
             <button class="search-btn" onclick="search()">🔍 查询</button>
             
             <div class="tips">
                 <strong>💡 提示</strong>
-                请输入用户ID查询该用户下载次数最高的前10个内容。
+                请输入稿定ID查询该用户下载次数最高的前10个内容。
             </div>
         </div>
 
@@ -2473,7 +2473,7 @@
             const resultContent = document.getElementById('resultContent');
 
             if (!userId) {
-                alert('请输入用户ID');
+                alert('请输入稿定ID');
                 return;
             }
 
@@ -2488,7 +2488,7 @@
                     <div class="no-result">
                         <div class="no-result-icon">😕</div>
                         <div>未找到该用户的下载记录</div>
-                        <div style="font-size: 12px; margin-top: 10px;">请检查用户ID是否正确</div>
+                        <div style="font-size: 12px; margin-top: 10px;">请检查稿定ID是否正确</div>
                     </div>
                 `;
             } else {
