@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据更新工具 - CSV转JSON</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .tool-box {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            resize: vertical;
+            min-height: 200px;
+        }
+
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-success {
+            background: #52c41a;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .result-box {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .result-box h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .result-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .output-area {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .tips {
+            background: #e6f7ff;
+            border: 1px solid #91d5ff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .tips h4 {
+            color: #096dd9;
+            margin-bottom: 10px;
+        }
+
+        .tips ul {
+            margin-left: 20px;
+            color: #333;
+        }
+
+        .tips li {
+            margin-bottom: 5px;
+        }
+
+        .error {
+            background: #fff2f0;
+            border: 1px solid #ffccc7;
+            color: #ff4d4f;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .success {
+            background: #f6ffed;
+            border: 1px solid #b7eb8f;
+            color: #52c41a;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛠️ 数据更新工具</h1>
+            <p>将CSV数据转换为JSON格式，方便更新到查询系统</p>
+        </div>
+
+        <div class="tool-box">
+            <div class="tips">
+                <h4>📋 使用说明</h4>
+                <ul>
+                    <li>从飞书导出CSV格式的数据</li>
+                    <li>复制CSV内容（包含表头）粘贴到下方输入框</li>
+                    <li>点击"转换数据"按钮生成JSON格式</li>
+                    <li>将生成的JSON代码复制到 index.html 文件中替换原有数据</li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <div class="section-title">📥 输入CSV数据</div>
+                <div class="form-group">
+                    <label>CSV数据（支持 内容ID,内容名称,用户ID,用户名称,下载次数 格式）</label>
+                    <textarea id="csvInput" placeholder="作品id,作品名称,用户id,用户名称,下载次数
+195740984,金融理财知识科普宣传小红书封面,9012058202050790438,九日,26
+195951837,金融理财存钱小红书大字封面,9012058202050790438,九日,12"></textarea>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="convertData()">🔄 转换数据</button>
+                    <button class="btn btn-secondary" onclick="clearInput()">🗑️ 清空输入</button>
+                    <button class="btn btn-secondary" onclick="loadExample()">📄 加载示例</button>
+                </div>
+                <div id="message"></div>
+            </div>
+
+            <div class="section" id="resultSection" style="display: none;">
+                <div class="section-title">📤 转换结果</div>
+                <div class="result-stats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalCount">0</div>
+                        <div class="stat-label">总记录数</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="userCount">0</div>
+                        <div class="stat-label">用户数</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="maxDownload">0</div>
+                        <div class="stat-label">最高下载</div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>生成的JSON数据（可复制到 index.html 中）</label>
+                    <div class="output-area" id="jsonOutput"></div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-success" onclick="copyResult()">📋 复制结果</button>
+                    <button class="btn btn-secondary" onclick="downloadJSON()">💾 下载JSON文件</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">📝 更新步骤</div>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                    <ol style="line-height: 2; color: #333;">
+                        <li>复制上方生成的JSON代码</li>
+                        <li>打开 <code>index.html</code> 文件</li>
+                        <li>找到 <code>const data = [</code> 这一行</li>
+                        <li>选中原有数据数组内容（从开始到 <code>];</code> 之前）</li>
+                        <li>粘贴新的JSON数据替换</li>
+                        <li>保存文件即可</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 转换CSV为JSON
+        function convertData() {
+            const csvText = document.getElementById('csvInput').value.trim();
+            const messageDiv = document.getElementById('message');
+            
+            if (!csvText) {
+                showMessage('请输入CSV数据', 'error');
+                return;
+            }
+
+            try {
+                const lines = csvText.split('\n').filter(line => line.trim());
+                
+                if (lines.length < 2) {
+                    showMessage('CSV数据至少需要包含表头和一行数据', 'error');
+                    return;
+                }
+
+                // 解析CSV
+                const data = [];
+                const users = new Set();
+                let maxDownload = 0;
+
+                // 从第二行开始解析（跳过表头）
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+
+                    // 解析CSV行（处理引号内的逗号）
+                    const values = parseCSVLine(line);
+                    
+                    if (values.length >= 5) {
+                        const downloadCount = parseInt(values[4]) || 0;
+                        const item = {
+                            contentId: values[0].trim(),
+                            contentName: values[1].trim(),
+                            userId: values[2].trim(),
+                            userName: values[3].trim(),
+                            downloadCount: downloadCount
+                        };
+                        
+                        data.push(item);
+                        users.add(item.userId);
+                        maxDownload = Math.max(maxDownload, downloadCount);
+                    }
+                }
+
+                if (data.length === 0) {
+                    showMessage('未能解析出有效数据，请检查CSV格式', 'error');
+                    return;
+                }
+
+                // 生成JSON字符串
+                const jsonStr = generateJSON(data);
+                
+                // 显示结果
+                document.getElementById('jsonOutput').textContent = jsonStr;
+                document.getElementById('totalCount').textContent = data.length;
+                document.getElementById('userCount').textContent = users.size;
+                document.getElementById('maxDownload').textContent = maxDownload;
+                document.getElementById('resultSection').style.display = 'block';
+                
+                showMessage(`成功转换 ${data.length} 条数据！`, 'success');
+                
+            } catch (error) {
+                showMessage('转换失败：' + error.message, 'error');
+            }
+        }
+
+        // 解析CSV行
+        function parseCSVLine(line) {
+            const values = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    values.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            values.push(current.trim());
+            
+            return values;
+        }
+
+        // 生成格式化的JSON
+        function generateJSON(data) {
+            const lines = data.map((item, index) => {
+                const isLast = index === data.length - 1;
+                return `            {
+                contentId: "${item.contentId}",
+                contentName: "${item.contentName}",
+                userId: "${item.userId}",
+                userName: "${item.userName}",
+                downloadCount: ${item.downloadCount}
+            }${isLast ? '' : ','}`;
+            });
+            
+            return `const data = [
+${lines.join('\n')}
+        ];`;
+        }
+
+        // 清空输入
+        function clearInput() {
+            document.getElementById('csvInput').value = '';
+            document.getElementById('resultSection').style.display = 'none';
+            document.getElementById('message').innerHTML = '';
+        }
+
+        // 加载示例
+        function loadExample() {
+            const example = `作品id,作品名称,用户id,用户名称,下载次数
+195740984,金融理财知识科普宣传小红书封面,9012058202050790438,九日,26
+195951837,金融理财存钱小红书大字封面,9012058202050790438,九日,12
+195990542,春天野餐风促销活动小红书封面,9012058202050790438,九日,18
+195955759,春日宠粉抽奖小红书封面,9012058202050790438,九日,52`;
+            document.getElementById('csvInput').value = example;
+            showMessage('已加载示例数据，点击"转换数据"查看效果', 'success');
+        }
+
+        // 复制结果
+        function copyResult() {
+            const output = document.getElementById('jsonOutput').textContent;
+            navigator.clipboard.writeText(output).then(() => {
+                showMessage('已复制到剪贴板！', 'success');
+            }).catch(() => {
+                showMessage('复制失败，请手动复制', 'error');
+            });
+        }
+
+        // 下载JSON文件
+        function downloadJSON() {
+            const output = document.getElementById('jsonOutput').textContent;
+            const blob = new Blob([output], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'data-' + new Date().toISOString().slice(0, 10) + '.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showMessage('文件已下载！', 'success');
+        }
+
+        // 显示消息
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.innerHTML = `<div class="${type}">${text}</div>`;
+            setTimeout(() => {
+                messageDiv.innerHTML = '';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

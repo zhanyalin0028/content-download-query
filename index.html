@@ -1,0 +1,2535 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>投稿审核查询系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .search-box {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .search-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .search-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .search-btn:active {
+            transform: translateY(0);
+        }
+
+        .result-box {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            display: none;
+        }
+
+        .result-box.show {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-title {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        /* 结果网格布局 - 每行最多5个 */
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .result-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .result-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .image-container {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .image-container img {
+            max-width: 100%;
+            max-height: 150px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .info-grid {
+            display: grid;
+            gap: 10px;
+        }
+
+        .info-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .info-item .label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-item .value {
+            font-size: 16px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .status-pass {
+            color: #52c41a;
+        }
+
+        .status-reject {
+            color: #ff4d4f;
+        }
+
+        .reject-reason {
+            background: #fff2f0;
+            border: 1px solid #ffccc7;
+        }
+
+        .no-result {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .no-result-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .tips {
+            background: #e6f7ff;
+            border: 1px solid #91d5ff;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-top: 15px;
+            font-size: 13px;
+            color: #096dd9;
+        }
+
+        .tips strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>� 内容下载查询系统</h1>
+            <p>输入用户ID查询下载次数最高的前10个内容</p>
+        </div>
+
+        <div class="search-box">
+            <div class="form-group">
+                <label for="userId">用户ID</label>
+                <input type="text" id="userId" placeholder="请输入用户ID">
+            </div>
+            <button class="search-btn" onclick="search()">🔍 查询</button>
+            
+            <div class="tips">
+                <strong>💡 提示</strong>
+                请输入用户ID查询该用户下载次数最高的前10个内容。
+            </div>
+        </div>
+
+        <div class="result-box" id="resultBox">
+            <div class="result-title">📄 查询结果</div>
+            <div id="resultContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // 内容下载数据
+        const data = [
+            {
+                contentId: "195740984",
+                contentName: "金融理财知识科普宣传小红书封面",
+                userId: "9012058202050790438",
+                userName: "九日",
+                downloadCount: 26
+            },
+            {
+                contentId: "195951837",
+                contentName: "金融理财存钱小红书大字封面",
+                userId: "9012058202050790438",
+                userName: "九日",
+                downloadCount: 12
+            },
+            {
+                contentId: "195990542",
+                contentName: "春天野餐风促销活动小红书封面",
+                userId: "9012058202050790438",
+                userName: "九日",
+                downloadCount: 18
+            },
+            {
+                contentId: "195955759",
+                contentName: "春日宠粉抽奖小红书封面",
+                userId: "9012058202050790438",
+                userName: "九日",
+                downloadCount: 52
+            },
+            {
+                contentId: "195981698",
+                contentName: "春天出游晒照小红书互动封面",
+                userId: "9012058202050790438",
+                userName: "九日",
+                downloadCount: 36
+            },
+            {
+                contentId: "195755596",
+                contentName: "金融理财知识科普宣传人像小红书封面",
+                userId: "9012058202050790438",
+                userName: "九日",
+                downloadCount: 6
+            },
+            {
+                contentId: "195844644",
+                contentName: "金融理财知识科普宣传小红书内页",
+                userId: "9012058202050790438",
+                userName: "九日",
+                downloadCount: 33
+            },
+            {
+                contentId: "195974091",
+                contentName: "教育开学季话题讨论小红书封面",
+                userId: "9012058202050790438",
+                userName: "九日",
+                downloadCount: 22
+            },
+            {
+                contentId: "195729832",
+                contentName: "金融理财知识科普宣传小红书封面",
+                userId: "9012058202050790438",
+                userName: "九日",
+                downloadCount: 49
+            },
+            {
+                contentId: "195848576",
+                contentName: "春节生活娱乐通用喜庆感小红书封面",
+                userId: "9012058202050790438",
+                userName: "九日",
+                downloadCount: 7
+            },
+            {
+                contentId: "195953128",
+                contentName: "春日氧气出游小红书封面",
+                userId: "9012058202050790438",
+                userName: "九日",
+                downloadCount: 35
+            },
+            {
+                contentId: "195833677",
+                contentName: "妇女节活动宣传通用唯美感小红书封面",
+                userId: "9012058202050790438",
+                userName: "九日",
+                downloadCount: 40
+            },
+            {
+                contentId: "195961064",
+                contentName: "妇女节美业门店活动小红书封面",
+                userId: "9012058202050790438",
+                userName: "九日",
+                downloadCount: 35
+            },
+            {
+                contentId: "195959417",
+                contentName: "金融理财股票大字小红书封面",
+                userId: "9012058202050790438",
+                userName: "九日",
+                downloadCount: 3
+            },
+            {
+                contentId: "196198422",
+                contentName: "openclaw养虾小红书大字封面",
+                userId: "9012058202050790438",
+                userName: "九日",
+                downloadCount: 9
+            },
+            {
+                contentId: "195838478",
+                contentName: "春节新春晒照小红书封面",
+                userId: "9012058202050790438",
+                userName: "九日",
+                downloadCount: 45
+            },
+            {
+                contentId: "195981714",
+                contentName: "妇女节宠粉活动小红书封面",
+                userId: "9012058202050790438",
+                userName: "九日",
+                downloadCount: 9
+            },
+            {
+                contentId: "195970818",
+                contentName: "旅游出行宣传小红书封面",
+                userId: "9012058202050790438",
+                userName: "九日",
+                downloadCount: 7
+            },
+            {
+                contentId: "196187218",
+                contentName: "中奖通知吸睛小红书封面",
+                userId: "9012058202050790438",
+                userName: "九日",
+                downloadCount: 1
+            },
+            {
+                contentId: "195687142",
+                contentName: "热门标题大字吸睛爆款金融理财指南小红书封面",
+                userId: "9012058202050790438",
+                userName: "九日",
+                downloadCount: 353
+            },
+            {
+                contentId: "195851543",
+                contentName: "妇女节创意玩法通用唯美感小红书封面",
+                userId: "9012058202050790438",
+                userName: "九日",
+                downloadCount: 147
+            },
+            {
+                contentId: "196002919",
+                contentName: "家居好物推荐小红书封面",
+                userId: "9012058202050790438",
+                userName: "九日",
+                downloadCount: 6
+            },
+            {
+                contentId: "196187893",
+                contentName: "金融银行活动薅羊毛小红书封面",
+                userId: "9012058202050790438",
+                userName: "九日",
+                downloadCount: 4
+            },
+            {
+                contentId: "196184393",
+                contentName: "运动健身科普小红书封面",
+                userId: "9012058202050790438",
+                userName: "九日",
+                downloadCount: 1
+            },
+            {
+                contentId: "195968349",
+                contentName: "酒中式春节开门红开工高奢金色电商竖版海报",
+                userId: "9013222770839915612",
+                userName: "Horse_Y",
+                downloadCount: 7
+            },
+            {
+                contentId: "195972376",
+                contentName: "春节节日祝福通用喜庆感手机海报",
+                userId: "9013553779069948974",
+                userName: "旺仔小满头",
+                downloadCount: 77
+            },
+            {
+                contentId: "195857854",
+                contentName: "五金建材电商商品主图",
+                userId: "9014698572545267737",
+                userName: "134****5489",
+                downloadCount: 66
+            },
+            {
+                contentId: "195331119",
+                contentName: "旅游出行北京旅游机票促销全屏竖版海报",
+                userId: "9015805073024882762",
+                userName: ":",
+                downloadCount: 5
+            },
+            {
+                contentId: "196194207",
+                contentName: "星工驿站小红书图文",
+                userId: "9016168655581747286",
+                userName: "豆豆",
+                downloadCount: 3
+            },
+            {
+                contentId: "195800744",
+                contentName: "春节节日祝福通用喜庆感中式感全屏竖版海报",
+                userId: "9017242908283251715",
+                userName: "李至安1115",
+                downloadCount: 24
+            },
+            {
+                contentId: "195796713",
+                contentName: "春节暂停营业公告通用喜庆感手机海报",
+                userId: "9017242908283251715",
+                userName: "李至安1115",
+                downloadCount: 13
+            },
+            {
+                contentId: "195805676",
+                contentName: "春节节日祝福通用喜庆感手机海报",
+                userId: "9017242908283251715",
+                userName: "李至安1115",
+                downloadCount: 10
+            },
+            {
+                contentId: "195796654",
+                contentName: "春节节日祝福通用喜庆感全屏竖版海报",
+                userId: "9017242908283251715",
+                userName: "李至安1115",
+                downloadCount: 43
+            },
+            {
+                contentId: "196067824",
+                contentName: "春季大促满减活动电商促销清新海报模板",
+                userId: "9017242908283251715",
+                userName: "李至安1115",
+                downloadCount: 1
+            },
+            {
+                contentId: "195820290",
+                contentName: "春节节日祝福通用喜庆感手机海报",
+                userId: "9017242908283251715",
+                userName: "李至安1115",
+                downloadCount: 8
+            },
+            {
+                contentId: "195805668",
+                contentName: "春节节日祝福通用中式感喜庆感全屏竖版海报",
+                userId: "9017242908283251715",
+                userName: "李至安1115",
+                downloadCount: 97
+            },
+            {
+                contentId: "195785513",
+                contentName: "商品零售生鲜水果食品促销宣传手机海报AIGC",
+                userId: "9017355157006855202",
+                userName: "GD239552380",
+                downloadCount: 1
+            },
+            {
+                contentId: "196216366",
+                contentName: "open claw -小红书吸睛封面",
+                userId: "9017514521992899600",
+                userName: "凌晨半夜的狗",
+                downloadCount: 5
+            },
+            {
+                contentId: "196175623",
+                contentName: "自媒体博主攻略科普吸睛网感视频封面爆款小红书封面",
+                userId: "9017514521992899600",
+                userName: "凌晨半夜的狗",
+                downloadCount: 6
+            },
+            {
+                contentId: "196360404",
+                contentName: "清明放假通知手机海报",
+                userId: "9017514521992899600",
+                userName: "凌晨半夜的狗",
+                downloadCount: 4
+            },
+            {
+                contentId: "196199200",
+                contentName: "个人理财知识科普小红书封面",
+                userId: "9017514521992899600",
+                userName: "凌晨半夜的狗",
+                downloadCount: 3
+            },
+            {
+                contentId: "196224004",
+                contentName: "open claw-养龙虾小红书视频号爆款封面",
+                userId: "9017514521992899600",
+                userName: "凌晨半夜的狗",
+                downloadCount: 1
+            },
+            {
+                contentId: "196200377",
+                contentName: "春日焕新季湿巾人物直播背景贴片",
+                userId: "9017514521992899600",
+                userName: "凌晨半夜的狗",
+                downloadCount: 10
+            },
+            {
+                contentId: "196223350",
+                contentName: "宝妈-母婴亲子小红书视频号封面",
+                userId: "9017514521992899600",
+                userName: "凌晨半夜的狗",
+                downloadCount: 4
+            },
+            {
+                contentId: "195857858",
+                contentName: "春节节日祝福通用喜庆感全屏竖版海报",
+                userId: "9017514521992899600",
+                userName: "凌晨半夜的狗",
+                downloadCount: 193
+            },
+            {
+                contentId: "196442197",
+                contentName: "小红书吸睛封面-穿搭博主，拍照达人",
+                userId: "9017514521992899600",
+                userName: "凌晨半夜的狗",
+                downloadCount: 2
+            },
+            {
+                contentId: "196209130",
+                contentName: "养龙虾-openclaw AI -小红书封面",
+                userId: "9017514521992899600",
+                userName: "凌晨半夜的狗",
+                downloadCount: 5
+            },
+            {
+                contentId: "196358524",
+                contentName: "清明放假通知手机海报",
+                userId: "9017514521992899600",
+                userName: "凌晨半夜的狗",
+                downloadCount: 3
+            },
+            {
+                contentId: "196055379",
+                contentName: "3.8女神节人物唯美营销促销直播背景",
+                userId: "9017514521992899600",
+                userName: "凌晨半夜的狗",
+                downloadCount: 12
+            },
+            {
+                contentId: "196194183",
+                contentName: "公众号封面-教育",
+                userId: "9017514521992899600",
+                userName: "凌晨半夜的狗",
+                downloadCount: 14
+            },
+            {
+                contentId: "196337344",
+                contentName: "母婴攻略指南分享小红书封面",
+                userId: "9017514521992899600",
+                userName: "凌晨半夜的狗",
+                downloadCount: 2
+            },
+            {
+                contentId: "196179818",
+                contentName: "小红书封面-自媒体博主吸睛封面",
+                userId: "9017514521992899600",
+                userName: "凌晨半夜的狗",
+                downloadCount: 5
+            },
+            {
+                contentId: "195857827",
+                contentName: "饮食瘦身知识科普小红书配图",
+                userId: "9017721548346107965",
+                userName: "允在家的小豆花??",
+                downloadCount: 12
+            },
+            {
+                contentId: "196079235",
+                contentName: "粉蓝色3d风春季企业人才招募手机海报",
+                userId: "9017876418980882513",
+                userName: "Y3uii",
+                downloadCount: 28
+            },
+            {
+                contentId: "195962011",
+                contentName: "人员招募招聘3D人物公众号首图AIGC",
+                userId: "9017935305201036294",
+                userName: "轻轻",
+                downloadCount: 14
+            },
+            {
+                contentId: "195778604",
+                contentName: "春节节日祝福通用3D感全屏竖版海报",
+                userId: "9017983036515559514",
+                userName: "雯雯1015",
+                downloadCount: 58
+            },
+            {
+                contentId: "195761281",
+                contentName: "春节节日祝福通用3D感手机海报",
+                userId: "9017983036515559514",
+                userName: "雯雯1015",
+                downloadCount: 195
+            },
+            {
+                contentId: "195589709",
+                contentName: "春节节日祝福通用喜庆感全屏竖版海报",
+                userId: "9017983036515559514",
+                userName: "雯雯1015",
+                downloadCount: 80
+            },
+            {
+                contentId: "195774287",
+                contentName: "春节节日祝福通用3D感全屏竖版海报",
+                userId: "9017983036515559514",
+                userName: "雯雯1015",
+                downloadCount: 67
+            },
+            {
+                contentId: "195765757",
+                contentName: "春节节日祝福通用3D感全屏竖版海报",
+                userId: "9017983036515559514",
+                userName: "雯雯1015",
+                downloadCount: 48
+            },
+            {
+                contentId: "195608679",
+                contentName: "春节节日祝福教培行业3D感竖版海报",
+                userId: "9017983036515559514",
+                userName: "雯雯1015",
+                downloadCount: 85
+            },
+            {
+                contentId: "195749288",
+                contentName: "春节节日祝福通用3D感全屏竖版海报",
+                userId: "9017983036515559514",
+                userName: "雯雯1015",
+                downloadCount: 64
+            },
+            {
+                contentId: "196005626",
+                contentName: "2026掌门锻造营",
+                userId: "9018002399782250559",
+                userName: "Grace Cai",
+                downloadCount: 1
+            },
+            {
+                contentId: "196354179",
+                contentName: "踏春好时节海报",
+                userId: "9018126759826304039",
+                userName: "旧1",
+                downloadCount: 4
+            },
+            {
+                contentId: "196358027",
+                contentName: "手工拼豆小技巧大字吸晴小红书封面",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 2
+            },
+            {
+                contentId: "196056203",
+                contentName: "教育培训四六级备考攻略指南趣味拙气风插画分享小红书封面",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 4
+            },
+            {
+                contentId: "196336965",
+                contentName: "教育培训学历教育高考课程营销促销公众号次图",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 2
+            },
+            {
+                contentId: "196200850",
+                contentName: "吸晴养龙虾/Open Claw知识科普趣味拙气风插画小红书封面",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 5
+            },
+            {
+                contentId: "195992025",
+                contentName: "三八妇女节节日祝福力量感石矶娘娘公众号首图",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 10
+            },
+            {
+                contentId: "195966975",
+                contentName: "春季开学季新学期优惠活动小红书",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 26
+            },
+            {
+                contentId: "196056599",
+                contentName: "企业行政春招招聘岗位趣味插画小红书封面",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 5
+            },
+            {
+                contentId: "196215745",
+                contentName: "OpenClaw 养龙虾 ai助手小红书讨论话题封面",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 4
+            },
+            {
+                contentId: "196354725",
+                contentName: "企业行政春招招聘岗位趣味插画手机海报",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 4
+            },
+            {
+                contentId: "196348774",
+                contentName: "打工人职场摸鱼小技巧分享趣味meme猫小红书封面",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 1
+            },
+            {
+                contentId: "196444497",
+                contentName: "特别注意爆炸风格趣味插画公众号次图",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 2
+            },
+            {
+                contentId: "195958777",
+                contentName: "38妇女节石矶娘娘插画公众号首图",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 25
+            },
+            {
+                contentId: "195968384",
+                contentName: "秋季开学季商品零售文具促销活动卡通感小红书封面",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 6
+            },
+            {
+                contentId: "196183613",
+                contentName: "吸晴养龙虾/Open Claw知识科普趣味插画公众号首图",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 8
+            },
+            {
+                contentId: "196039188",
+                contentName: "吸晴企业人员招募招聘趣味拙气风插画人物小红书封面",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 5
+            },
+            {
+                contentId: "196331363",
+                contentName: "春季上新餐饮轻食产品推荐清新感小红书封面",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 2
+            },
+            {
+                contentId: "196359040",
+                contentName: "爆款吸睛手工拼豆教程大字排版小红书封面",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 4
+            },
+            {
+                contentId: "196425587",
+                contentName: "教育培训考公考编直播预告朋友圈海报",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 3
+            },
+            {
+                contentId: "196346762",
+                contentName: "餐饮美食烘培甜品面包春季产品推荐小红书封面",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 5
+            },
+            {
+                contentId: "196358600",
+                contentName: "教育培训K12教育早幼教春日游园会邀请函公众号次图",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 6
+            },
+            {
+                contentId: "195802577",
+                contentName: "春节节日营销通用大促趣味感促销感竖版海报",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 28
+            },
+            {
+                contentId: "196345152",
+                contentName: "离职社保攻略科普指南小红书封面",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 3
+            },
+            {
+                contentId: "196334717",
+                contentName: "教育培训高考高分冲刺课程招生促销考前冲刺小红书封面",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 1
+            },
+            {
+                contentId: "196035911",
+                contentName: "企业人员招募招聘趣味拙气风插画人物公众号首图",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 2
+            },
+            {
+                contentId: "196011402",
+                contentName: "酒吧餐吧拓客引流爆款大字吸晴小红书封面",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 5
+            },
+            {
+                contentId: "196428841",
+                contentName: "教育高考课程营销宣传祝福公众号次图",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 2
+            },
+            {
+                contentId: "196435740",
+                contentName: "教育培训春季活动宣传公众号次图",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 1
+            },
+            {
+                contentId: "195962718",
+                contentName: "企业行政求职招聘趣味插画小红书",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 1
+            },
+            {
+                contentId: "196358601",
+                contentName: "清明节祝福教育培训行业新中式渐变扁平公众号次图",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 1
+            },
+            {
+                contentId: "196333645",
+                contentName: "服饰美食春季营销促销活动公众号次图",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 4
+            },
+            {
+                contentId: "196346395",
+                contentName: "餐饮美食面包烘焙营销卖货促销潮流感小红书封面",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 1
+            },
+            {
+                contentId: "196450424",
+                contentName: "教育培训技能培训AI课程课程营销公众号次图",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 1
+            },
+            {
+                contentId: "195816955",
+                contentName: "春节促销活动通用喜庆感公众号首图",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 22
+            },
+            {
+                contentId: "196433641",
+                contentName: "清明节放假通知公众号次图",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 1
+            },
+            {
+                contentId: "196435097",
+                contentName: "企业清明节微缩合成公众号首图",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 1
+            },
+            {
+                contentId: "196333398",
+                contentName: "社会资讯宣传微信公众号次图",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 1
+            },
+            {
+                contentId: "196338724",
+                contentName: "高考加油肌理感书本钢笔剪影祝福公众号首图",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 2
+            },
+            {
+                contentId: "196080949",
+                contentName: "吸晴企业求职招聘岗位趣味拙气风插画小红书封面",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 13
+            },
+            {
+                contentId: "196016592",
+                contentName: "吸晴职场秘籍职场人打工生存指南分享小红书封面",
+                userId: "9018200348263196713",
+                userName: "星河",
+                downloadCount: 7
+            },
+            {
+                contentId: "196017422",
+                contentName: "企业行政求职招聘宣传推广公众号首图",
+                userId: "9018286433815767123",
+                userName: "I＇m not afraid",
+                downloadCount: 14
+            },
+            {
+                contentId: "196084535",
+                contentName: "电商线上超市商场营销促销竖版海报",
+                userId: "9018286433815767123",
+                userName: "I＇m not afraid",
+                downloadCount: 2
+            },
+            {
+                contentId: "196017455",
+                contentName: "企业招聘拼贴风公众号首图",
+                userId: "9018286433815767123",
+                userName: "I＇m not afraid",
+                downloadCount: 1
+            },
+            {
+                contentId: "195802305",
+                contentName: "电商春节物流停运公告电商主图",
+                userId: "9019578123516389377",
+                userName: "奇遇",
+                downloadCount: 5
+            },
+            {
+                contentId: "195807050",
+                contentName: "春节个人生活通用喜庆感小红书封面",
+                userId: "9019578123516389377",
+                userName: "奇遇",
+                downloadCount: 4
+            },
+            {
+                contentId: "196002555",
+                contentName: "踏青出游推广宣传营销趣味3D小红书封面",
+                userId: "9019578123516389377",
+                userName: "奇遇",
+                downloadCount: 7
+            },
+            {
+                contentId: "195963541",
+                contentName: "k12教育新学期开学季引流卡通可爱拙气感公众号首图",
+                userId: "9019578123516389377",
+                userName: "奇遇",
+                downloadCount: 23
+            },
+            {
+                contentId: "195955811",
+                contentName: "促销感喜庆会员优惠券活动爆款电商主图",
+                userId: "9019578123516389377",
+                userName: "奇遇",
+                downloadCount: 3
+            },
+            {
+                contentId: "196057589",
+                contentName: "春季出游旅游踏青清新感竖版直播背景贴片组合",
+                userId: "9019578123516389377",
+                userName: "奇遇",
+                downloadCount: 66
+            },
+            {
+                contentId: "196014287",
+                contentName: "招聘爆款简约冲击感吸睛大字猫咪可爱公众号首图aigc",
+                userId: "9019578123516389377",
+                userName: "奇遇",
+                downloadCount: 17
+            },
+            {
+                contentId: "195966859",
+                contentName: "k12教育培训少儿英语课程招生商品主图",
+                userId: "9019578123516389377",
+                userName: "奇遇",
+                downloadCount: 3
+            },
+            {
+                contentId: "195682128",
+                contentName: "春节促销活动美业喜庆感全屏竖版海报",
+                userId: "9019578123516389377",
+                userName: "奇遇",
+                downloadCount: 1
+            },
+            {
+                contentId: "196002535",
+                contentName: "三八妇女节女神节女王节节日祝福通用唯美感全屏竖版海报",
+                userId: "9019588846951868504",
+                userName: "叶mina",
+                downloadCount: 25
+            },
+            {
+                contentId: "195998603",
+                contentName: "三八妇女节节日祝福中式时尚全屏竖版海报AIGC",
+                userId: "9019588846951868504",
+                userName: "叶mina",
+                downloadCount: 58
+            },
+            {
+                contentId: "195988976",
+                contentName: "教育培训课程营销宣传推广小红书封面",
+                userId: "9019602973054347284",
+                userName: "阿丹",
+                downloadCount: 3
+            },
+            {
+                contentId: "195790577",
+                contentName: "春节营销卖货通用促销感商品主图",
+                userId: "9019602973054347284",
+                userName: "阿丹",
+                downloadCount: 10
+            },
+            {
+                contentId: "195963946",
+                contentName: "大字吸睛金融理财科普小红书封面",
+                userId: "9019602973054347284",
+                userName: "阿丹",
+                downloadCount: 13
+            },
+            {
+                contentId: "195955468",
+                contentName: "K12教育培训课程直播上下贴片组合",
+                userId: "9019602973054347284",
+                userName: "阿丹",
+                downloadCount: 16
+            },
+            {
+                contentId: "196190615",
+                contentName: "金融理财科普小红书吸睛封面",
+                userId: "9019602973054347284",
+                userName: "阿丹",
+                downloadCount: 12
+            },
+            {
+                contentId: "195964057",
+                contentName: "金融理财产品小红书封面",
+                userId: "9019602973054347284",
+                userName: "阿丹",
+                downloadCount: 3
+            },
+            {
+                contentId: "195984946",
+                contentName: "教育培训活动宣传课程营销打折小红书封面",
+                userId: "9019602973054347284",
+                userName: "阿丹",
+                downloadCount: 4
+            },
+            {
+                contentId: "195969866",
+                contentName: "邀请通知科普通用类小红书吸睛大字封面",
+                userId: "9019602973054347284",
+                userName: "阿丹",
+                downloadCount: 9
+            },
+            {
+                contentId: "195958440",
+                contentName: "热门标题大字吸睛爆款金融理财指南小红书封面",
+                userId: "9019602973054347284",
+                userName: "阿丹",
+                downloadCount: 3
+            },
+            {
+                contentId: "195989260",
+                contentName: "春季开学季商品零售文具实景感促销小红书封面",
+                userId: "9019602973054347284",
+                userName: "阿丹",
+                downloadCount: 4
+            },
+            {
+                contentId: "195763552",
+                contentName: "春节祝福问候通用喜庆感手机海报",
+                userId: "9019602973054347284",
+                userName: "阿丹",
+                downloadCount: 80
+            },
+            {
+                contentId: "195862267",
+                contentName: "春节营销卖货美容美妆促销感商品主图",
+                userId: "9019602973054347284",
+                userName: "阿丹",
+                downloadCount: 4
+            },
+            {
+                contentId: "195990502",
+                contentName: "教育培训课程营销宣传推广小红书封面",
+                userId: "9019602973054347284",
+                userName: "阿丹",
+                downloadCount: 4
+            },
+            {
+                contentId: "195978336",
+                contentName: "大字吸睛爆款金融理财指南小红书封面",
+                userId: "9019602973054347284",
+                userName: "阿丹",
+                downloadCount: 5
+            },
+            {
+                contentId: "196008889",
+                contentName: "科普教学教育大字风小红书吸睛封面",
+                userId: "9019602973054347284",
+                userName: "阿丹",
+                downloadCount: 3
+            },
+            {
+                contentId: "195951752",
+                contentName: "K12教育培训通用直播间上下贴片",
+                userId: "9019602973054347284",
+                userName: "阿丹",
+                downloadCount: 23
+            },
+            {
+                contentId: "195848660",
+                contentName: "春节营销卖货通用喜庆感直播上下贴片",
+                userId: "9019602973054347284",
+                userName: "阿丹",
+                downloadCount: 5
+            },
+            {
+                contentId: "195763143",
+                contentName: "春节营销卖货通用促销感全屏竖版海报",
+                userId: "9019602973054347284",
+                userName: "阿丹",
+                downloadCount: 1
+            },
+            {
+                contentId: "195978356",
+                contentName: "大字吸睛爆款金融理财指南小红书封面",
+                userId: "9019602973054347284",
+                userName: "阿丹",
+                downloadCount: 6
+            },
+            {
+                contentId: "195952974",
+                contentName: "小红书可爱风吸睛大字封面",
+                userId: "9019602973054347284",
+                userName: "阿丹",
+                downloadCount: 2
+            },
+            {
+                contentId: "195859986",
+                contentName: "春节节日祝福通用喜庆感手机海报",
+                userId: "9019602973054347284",
+                userName: "阿丹",
+                downloadCount: 8
+            },
+            {
+                contentId: "195972753",
+                contentName: "热门标题大字吸睛爆款金融理财指南小红书封面",
+                userId: "9019602973054347284",
+                userName: "阿丹",
+                downloadCount: 12
+            },
+            {
+                contentId: "195961970",
+                contentName: "育儿科普可爱描边插画风吸睛小红书封面",
+                userId: "9019602973054347284",
+                userName: "阿丹",
+                downloadCount: 2
+            },
+            {
+                contentId: "195964430",
+                contentName: "热门标题大字吸睛爆款金融理财指南小红书封面",
+                userId: "9019602973054347284",
+                userName: "阿丹",
+                downloadCount: 9
+            },
+            {
+                contentId: "195951280",
+                contentName: "K12教育培训通用直播间上下贴片",
+                userId: "9019602973054347284",
+                userName: "阿丹",
+                downloadCount: 18
+            },
+            {
+                contentId: "195964439",
+                contentName: "热门标题大字吸睛爆款金融理财指南小红书封面",
+                userId: "9019602973054347284",
+                userName: "阿丹",
+                downloadCount: 10
+            },
+            {
+                contentId: "195988936",
+                contentName: "教育培训活动宣传课程营销打折小红书封面",
+                userId: "9019602973054347284",
+                userName: "阿丹",
+                downloadCount: 7
+            },
+            {
+                contentId: "196187749",
+                contentName: "春季招聘公众号首图封面",
+                userId: "9019602973054347284",
+                userName: "阿丹",
+                downloadCount: 9
+            },
+            {
+                contentId: "195951467",
+                contentName: "热门金融理财指南科普小红书封面",
+                userId: "9019602973054347284",
+                userName: "阿丹",
+                downloadCount: 5
+            },
+            {
+                contentId: "195967419",
+                contentName: "出游必备好物满减抽奖小红书配图",
+                userId: "9019602973054347284",
+                userName: "阿丹",
+                downloadCount: 2
+            },
+            {
+                contentId: "196190796",
+                contentName: "科技AI信息科普自媒体小红书封面",
+                userId: "9019602973054347284",
+                userName: "阿丹",
+                downloadCount: 3
+            },
+            {
+                contentId: "195862416",
+                contentName: "春节节日祝福通用喜庆感直播上下贴片",
+                userId: "9019602973054347284",
+                userName: "阿丹",
+                downloadCount: 28
+            },
+            {
+                contentId: "195969885",
+                contentName: "教育培训活动宣传课程营销打折小红书封面",
+                userId: "9019602973054347284",
+                userName: "阿丹",
+                downloadCount: 6
+            },
+            {
+                contentId: "196353272",
+                contentName: "清明节",
+                userId: "9019621114241237064",
+                userName: "38一条开心的花鱼",
+                downloadCount: 3
+            },
+            {
+                contentId: "195761071",
+                contentName: "雅思培训机构宣传四宫格小红书封面",
+                userId: "9019621114241237064",
+                userName: "38一条开心的花鱼",
+                downloadCount: 108
+            },
+            {
+                contentId: "195958115",
+                contentName: "春季招聘极简设计风策划与设计岗位招聘海报",
+                userId: "9019637085624084526",
+                userName: "seven",
+                downloadCount: 5
+            },
+            {
+                contentId: "195956881",
+                contentName: "教资上岸考试攻略职场攻略分享人像小红书封面",
+                userId: "9019637085624084526",
+                userName: "seven",
+                downloadCount: 7
+            },
+            {
+                contentId: "196425531",
+                contentName: "清明节节日祝福收集海报",
+                userId: "9019637085624084526",
+                userName: "seven",
+                downloadCount: 1
+            },
+            {
+                contentId: "195972760",
+                contentName: "教育培训开学季招生课程营销招生引流拼团拼课拙气感插画小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 36
+            },
+            {
+                contentId: "196197162",
+                contentName: "春季踏青旅游线路宣传活动促销竖版海报",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 7
+            },
+            {
+                contentId: "195968310",
+                contentName: "金融理财知识科普趣味小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 1
+            },
+            {
+                contentId: "195580156",
+                contentName: "开学季春季班活动促销营销公众号封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 51
+            },
+            {
+                contentId: "195964335",
+                contentName: "春季招聘企业春季人员招聘公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 4
+            },
+            {
+                contentId: "195966623",
+                contentName: "企业服务春季招聘求职招聘拙气感公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 2
+            },
+            {
+                contentId: "195978430",
+                contentName: "旅游出行酒店招募活动宣传小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 5
+            },
+            {
+                contentId: "195965272",
+                contentName: "金融理财建议知识科普卡通小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 6
+            },
+            {
+                contentId: "195965666",
+                contentName: "撸羊毛趣味3D促销满减抽奖活动公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 5
+            },
+            {
+                contentId: "195972477",
+                contentName: "金融投资理财女性财商课程小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 30
+            },
+            {
+                contentId: "195999485",
+                contentName: "春季春日宠物市集活动推广邀请函宣传推广小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 15
+            },
+            {
+                contentId: "195589464",
+                contentName: "马年春节节日祝福通用喜庆感公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 484
+            },
+            {
+                contentId: "195966410",
+                contentName: "金融大白话知识科普投资理财小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 16
+            },
+            {
+                contentId: "195818703",
+                contentName: "春节女装穿搭攻略OOTD小红书配图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 2
+            },
+            {
+                contentId: "195966151",
+                contentName: "金融贷款车抵贷营销宣传创意大字风格小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 3
+            },
+            {
+                contentId: "196039178",
+                contentName: "春日焕新母婴亲子促销活动趣味感3D公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 4
+            },
+            {
+                contentId: "195964740",
+                contentName: "教育培训开学季春季招生课程营销宣传趣味粘土公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 6
+            },
+            {
+                contentId: "196039079",
+                contentName: "三八妇女节通用节日祝福浪漫感小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 32
+            },
+            {
+                contentId: "196356276",
+                contentName: "春季养生知识科普小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 3
+            },
+            {
+                contentId: "195968041",
+                contentName: "金融理财投资知识指南攻略小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 3
+            },
+            {
+                contentId: "196191704",
+                contentName: "春日摊位市集营销旅游出行景区景点市集活动宣传插画公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 4
+            },
+            {
+                contentId: "195966992",
+                contentName: "春季招聘企业春招求职插画趣味公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 20
+            },
+            {
+                contentId: "195953978",
+                contentName: "企业社会春季招聘内推求职通知3D小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 3
+            },
+            {
+                contentId: "196039078",
+                contentName: "38妇女节节日祝福粉色公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 34
+            },
+            {
+                contentId: "196038790",
+                contentName: "金融理财基金深度解读科普可爱理财知识小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 5
+            },
+            {
+                contentId: "195988822",
+                contentName: "教育培训K12招生宣传推广公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 5
+            },
+            {
+                contentId: "195961455",
+                contentName: "秋季开学季商品零售文具促销活动卡通感小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 15
+            },
+            {
+                contentId: "195978422",
+                contentName: "金融理财省钱秘籍知识科普小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 4
+            },
+            {
+                contentId: "195966630",
+                contentName: "金融债券基金理财知识科普宣传蓝色小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 11
+            },
+            {
+                contentId: "195966834",
+                contentName: "教育培训开学少儿艺术兴趣绘画课程营销招生宣传试听课插画公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 6
+            },
+            {
+                contentId: "195965220",
+                contentName: "教育培训艺术兴趣绘画试听直播课程营销招生引流趣味拙气感小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 2
+            },
+            {
+                contentId: "196196597",
+                contentName: "房地产楼盘促销春日活动营销潮流感公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 4
+            },
+            {
+                contentId: "195736879",
+                contentName: "春节营业公告通用新中式公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 14
+            },
+            {
+                contentId: "196181759",
+                contentName: "金融理财大咖直播预告红金公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 1
+            },
+            {
+                contentId: "195968309",
+                contentName: "金融理财方法推荐攻略小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 4
+            },
+            {
+                contentId: "195826118",
+                contentName: "节后减肥瘦身肥胖卡通手绘知识科普小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 6
+            },
+            {
+                contentId: "195962008",
+                contentName: "金融圈热点话题新闻喇叭拙气感面性插画趣味小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 5
+            },
+            {
+                contentId: "195847702",
+                contentName: "春节节日祝福通用喜庆感小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 10
+            },
+            {
+                contentId: "196039076",
+                contentName: "三八妇女节节日祝福唯美文艺小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 50
+            },
+            {
+                contentId: "195960772",
+                contentName: "金融证券量化股票投资知识科普教育小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 8
+            },
+            {
+                contentId: "195962085",
+                contentName: "房产地产新盘房源促销推荐小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 1
+            },
+            {
+                contentId: "196198748",
+                contentName: "春季旅游踏青春游杭州路线宣传小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 10
+            },
+            {
+                contentId: "195962096",
+                contentName: "食品零食招募试吃官营销活动小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 2
+            },
+            {
+                contentId: "195802297",
+                contentName: "马年春节祝福小红书配图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 2
+            },
+            {
+                contentId: "195687205",
+                contentName: "春节节日祝福通用喜庆感手机海报",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 8
+            },
+            {
+                contentId: "195961709",
+                contentName: "金融保险股市投资行业新闻资讯解读小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 9
+            },
+            {
+                contentId: "195957699",
+                contentName: "春节攻略指南通用实景感小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 6
+            },
+            {
+                contentId: "195960667",
+                contentName: "春季招聘内推求职像素风小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 9
+            },
+            {
+                contentId: "195843611",
+                contentName: "春节马年祝福通用卡通感小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 3
+            },
+            {
+                contentId: "195962923",
+                contentName: "金融理财打工人存钱干货攻略小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 4
+            },
+            {
+                contentId: "195953977",
+                contentName: "春招企业春季招聘求职现代拟物小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 8
+            },
+            {
+                contentId: "195562537",
+                contentName: "春节个人生活通用喜庆感小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 8
+            },
+            {
+                contentId: "195958999",
+                contentName: "开学季教育培训学习攻略插画小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 12
+            },
+            {
+                contentId: "195968208",
+                contentName: "教育培训公考省考政治理论课程营销小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 3
+            },
+            {
+                contentId: "195963562",
+                contentName: "旅游出行春季踏青出游旅游路线营销小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 16
+            },
+            {
+                contentId: "195967053",
+                contentName: "春日摄影大赛活动拼贴小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 7
+            },
+            {
+                contentId: "195965392",
+                contentName: "教育培训K12开学季招生活动营销插画公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 5
+            },
+            {
+                contentId: "196194072",
+                contentName: "春季招聘毕业生找工作攻略小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 4
+            },
+            {
+                contentId: "195958906",
+                contentName: "三八妇女节节日祝福文案时尚感小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 32
+            },
+            {
+                contentId: "196196628",
+                contentName: "春季美白护肤科普知识干货小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 12
+            },
+            {
+                contentId: "195963123",
+                contentName: "商务风金融懒人理财宣传小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 2
+            },
+            {
+                contentId: "195964343",
+                contentName: "38妇女节走心文案祝福语手绘花朵小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 29
+            },
+            {
+                contentId: "196027191",
+                contentName: "春日焕新促销活动打折满减少立体感手持卡券小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 1
+            },
+            {
+                contentId: "195737152",
+                contentName: "春节营销卖货通用插画风手机海报",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 15
+            },
+            {
+                contentId: "195949910",
+                contentName: "教育培训开学季课程营销公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 3
+            },
+            {
+                contentId: "195723085",
+                contentName: "春节节日祝福通用奢华感全屏竖版海报",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 19
+            },
+            {
+                contentId: "195961013",
+                contentName: "春日踏青出游节日活动公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 10
+            },
+            {
+                contentId: "195962157",
+                contentName: "房地产楼盘促销活动宣传3D小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 2
+            },
+            {
+                contentId: "195966322",
+                contentName: "金融五险一金使用指南攻略小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 10
+            },
+            {
+                contentId: "196039263",
+                contentName: "妇女节节日祝福日签正能量语录公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 94
+            },
+            {
+                contentId: "196039182",
+                contentName: "商品零售商超百货春季促销春天3d公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 41
+            },
+            {
+                contentId: "196185934",
+                contentName: "房地产红盘热销活动促销红金公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 2
+            },
+            {
+                contentId: "195959548",
+                contentName: "开学季开学避坑指南趣味感插画风格小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 9
+            },
+            {
+                contentId: "195966793",
+                contentName: "春季招聘找工作攻略指南小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 3
+            },
+            {
+                contentId: "196199691",
+                contentName: "企业行政春招招聘岗位公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 7
+            },
+            {
+                contentId: "195955628",
+                contentName: "金融理财产品宣传攻略手绘插画小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 13
+            },
+            {
+                contentId: "195951629",
+                contentName: "春日焕新宠粉打折促销满减促销3D喇叭公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 18
+            },
+            {
+                contentId: "196175612",
+                contentName: "金融理财产品营销宣传3d公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 2
+            },
+            {
+                contentId: "195962928",
+                contentName: "旅游出行踏青出游旅游营地营销小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 2
+            },
+            {
+                contentId: "195962599",
+                contentName: "春季促销活动宣传打折满减充值营销趣味感3D公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 18
+            },
+            {
+                contentId: "196175111",
+                contentName: "房地产旺铺招商限时优惠活动公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 4
+            },
+            {
+                contentId: "195734029",
+                contentName: "春节通知公告营业时间喜庆感商超手机海报",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 26
+            },
+            {
+                contentId: "195718628",
+                contentName: "春节节日祝福通用插画风全屏竖版海报",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 20
+            },
+            {
+                contentId: "195956895",
+                contentName: "春日户外露营跟团游营销3d立体公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 23
+            },
+            {
+                contentId: "195964522",
+                contentName: "企业行政求职春季招聘宣传推广公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 40
+            },
+            {
+                contentId: "195962395",
+                contentName: "春节个人生活通用喜庆感红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 1
+            },
+            {
+                contentId: "196199536",
+                contentName: "春季招聘岗位求职公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 10
+            },
+            {
+                contentId: "195567994",
+                contentName: "春节节日祝福通用喜庆感全屏竖版海报",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 64
+            },
+            {
+                contentId: "195820380",
+                contentName: "春节节日活动通用喜庆感公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 42
+            },
+            {
+                contentId: "195968030",
+                contentName: "金融证券财经理财定投知识科普小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 12
+            },
+            {
+                contentId: "196187846",
+                contentName: "春季上新餐饮轻食简餐产品推荐朋友圈海报",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 24
+            },
+            {
+                contentId: "196439524",
+                contentName: "春季旅游春游踏青露营物品清单攻略小红书配图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 1
+            },
+            {
+                contentId: "195958704",
+                contentName: "金融热点话题讨论攻略小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 9
+            },
+            {
+                contentId: "195961997",
+                contentName: "春节攻略指南通用喜庆感小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 8
+            },
+            {
+                contentId: "195586316",
+                contentName: "春节节日祝福通用趣味感手机海报",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 44
+            },
+            {
+                contentId: "195970518",
+                contentName: "教育培训K12教育开学季小升初准备攻略小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 10
+            },
+            {
+                contentId: "195741050",
+                contentName: "妇女节节日祝福通用写实感全屏竖版海报",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 29
+            },
+            {
+                contentId: "195964350",
+                contentName: "企业行政公司活动员工春日团建通知公告公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 12
+            },
+            {
+                contentId: "195735562",
+                contentName: "春节节日祝福通用3D感全屏竖版海报",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 4
+            },
+            {
+                contentId: "196199265",
+                contentName: "春日踏青徒步路线攻略小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 24
+            },
+            {
+                contentId: "196175614",
+                contentName: "春季招聘求职简历攻略干货分享小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 44
+            },
+            {
+                contentId: "196191237",
+                contentName: "春季招聘趣味简约3d求职招人公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 4
+            },
+            {
+                contentId: "195591628",
+                contentName: "干货攻略爆款emoji大字小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 21
+            },
+            {
+                contentId: "196181960",
+                contentName: "房地产优选房源特惠活动促销公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 4
+            },
+            {
+                contentId: "195974123",
+                contentName: "三八妇女节节日营销礼物合集插画小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 23
+            },
+            {
+                contentId: "196181923",
+                contentName: "企业行政春季招聘岗位公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 13
+            },
+            {
+                contentId: "196193102",
+                contentName: "春季招聘求职急招手绘插画小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 9
+            },
+            {
+                contentId: "196359429",
+                contentName: "春日旅游拍照姿势攻略小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 1
+            },
+            {
+                contentId: "195966648",
+                contentName: "房地产销售中介楼盘营销介绍拼贴画风小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 16
+            },
+            {
+                contentId: "196026057",
+                contentName: "餐饮美食春季上新中餐正餐清新感实景合成朋友圈海报",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 18
+            },
+            {
+                contentId: "195964296",
+                contentName: "招募新品体验官测评卡通趣味小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 6
+            },
+            {
+                contentId: "196201452",
+                contentName: "玩转东南亚穷游攻略小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 6
+            },
+            {
+                contentId: "195972051",
+                contentName: "秋季开学季开学通知软3D风格小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 12
+            },
+            {
+                contentId: "195964527",
+                contentName: "春天春季文案清新弥散风渐变小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 24
+            },
+            {
+                contentId: "196346768",
+                contentName: "清明踏青邀请函活动实景插画小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 1
+            },
+            {
+                contentId: "196050423",
+                contentName: "三八妇女节妇女节节日祝福毛绒浪漫感公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 40
+            },
+            {
+                contentId: "195696088",
+                contentName: "春节节日祝福通用趣味感小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 51
+            },
+            {
+                contentId: "196187099",
+                contentName: "母婴好物分享撕纸拼贴风小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 11
+            },
+            {
+                contentId: "196017495",
+                contentName: "春季上新餐饮中餐正餐产品推荐朋友圈海报",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 27
+            },
+            {
+                contentId: "195740569",
+                contentName: "春节个人生活商超百货通用喜庆感小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 11
+            },
+            {
+                contentId: "195798912",
+                contentName: "春节节日祝福通用喜庆感小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 7
+            },
+            {
+                contentId: "195961453",
+                contentName: "金融财经新闻热点商务教育小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 32
+            },
+            {
+                contentId: "196199038",
+                contentName: "企业行政春招春季招聘岗位公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 8
+            },
+            {
+                contentId: "195958647",
+                contentName: "教育培训开学第一课可爱插画公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 1
+            },
+            {
+                contentId: "195729678",
+                contentName: "春节晒图晒照通用喜庆感小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 5
+            },
+            {
+                contentId: "196427625",
+                contentName: "抹茶奶茶春日限定促销公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 1
+            },
+            {
+                contentId: "195963908",
+                contentName: "金融理财基础知识科普攻略小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 21
+            },
+            {
+                contentId: "195961248",
+                contentName: "餐饮美食中式感春季上新中餐菜品小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 3
+            },
+            {
+                contentId: "195965617",
+                contentName: "金融基金收益科普知识计算机大字报小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 2
+            },
+            {
+                contentId: "195970302",
+                contentName: "3月社群活动营销打卡活动粉色小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 42
+            },
+            {
+                contentId: "195972479",
+                contentName: "开学家长须知通知拼贴风公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 5
+            },
+            {
+                contentId: "195959620",
+                contentName: "房地产租房攻略分享营销小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 1
+            },
+            {
+                contentId: "195752022",
+                contentName: "春节营销卖货通用喜庆感手机海报",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 9
+            },
+            {
+                contentId: "195962394",
+                contentName: "春节个人生活通用喜庆感小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 8
+            },
+            {
+                contentId: "195951395",
+                contentName: "教育培训开学季早幼教绘画兴趣班春季招生引流拙气感公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 6
+            },
+            {
+                contentId: "196191496",
+                contentName: "地产楼盘特价房房源清盘活动公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 1
+            },
+            {
+                contentId: "195962014",
+                contentName: "金融理财强制存钱攻略小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 1
+            },
+            {
+                contentId: "195832203",
+                contentName: "春节个人生活晒照喜庆感拼图小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 21
+            },
+            {
+                contentId: "196199689",
+                contentName: "春日绘画班招生训K12教育早幼教幼儿园招生引流拙气感公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 10
+            },
+            {
+                contentId: "195958571",
+                contentName: "春天春季春日文案趣味感3D小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 21
+            },
+            {
+                contentId: "195952508",
+                contentName: "金融讲师财经知识讲解宣传小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 7
+            },
+            {
+                contentId: "195949709",
+                contentName: "打工人职场人金融理财存钱计划攻略小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 6
+            },
+            {
+                contentId: "196197346",
+                contentName: "2026春季招聘情报站求职岗位公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 1
+            },
+            {
+                contentId: "195833667",
+                contentName: "春节节日祝福通用卡通感小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 2
+            },
+            {
+                contentId: "196193046",
+                contentName: "企业行政春季招聘岗位公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 5
+            },
+            {
+                contentId: "195955618",
+                contentName: "开学季促销活动促销感公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 31
+            },
+            {
+                contentId: "195966415",
+                contentName: "开学季新学期装备好货促销活动插画公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 14
+            },
+            {
+                contentId: "195958202",
+                contentName: "教育培训开学季考试备考攻略课程招生小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 7
+            },
+            {
+                contentId: "195962081",
+                contentName: "企业行政求职春季招聘宣传推广公众号首图",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 2
+            },
+            {
+                contentId: "196201471",
+                contentName: "春日昆明旅游徒步路线攻略小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 10
+            },
+            {
+                contentId: "195567989",
+                contentName: "春节节日营销教育培训拙气感小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 101
+            },
+            {
+                contentId: "195970815",
+                contentName: "高效学习教育培训知识科普攻略卡通小红书封面",
+                userId: "9019655476248586246",
+                userName: "西柚",
+                downloadCount: 7
+            },
+            {
+                contentId: "195967093",
+                contentName: "企业行政求职招聘插画微信公众号封面首图",
+                userId: "9019656041015689283",
+                userName: "蒜鸟",
+                downloadCount: 13
+            },
+            {
+                contentId: "195970256",
+                contentName: "卡通感插画风企业春季招聘微信公众号封面首图",
+                userId: "9019656041015689283",
+                userName: "蒜鸟",
+                downloadCount: 1
+            },
+            {
+                contentId: "195958313",
+                contentName: "企业行政求职春季招聘时尚感公众号首图",
+                userId: "9019656041015689283",
+                userName: "蒜鸟",
+                downloadCount: 29
+            },
+            {
+                contentId: "196279511",
+                contentName: "AI智能体知识科普养龙虾攻略分享人像小红书封面",
+                userId: "9019656041015689283",
+                userName: "蒜鸟",
+                downloadCount: 2
+            },
+            {
+                contentId: "195964912",
+                contentName: "开学季好物清单趣味插画小红书封面",
+                userId: "9019656041015689283",
+                userName: "蒜鸟",
+                downloadCount: 30
+            },
+            {
+                contentId: "195967726",
+                contentName: "企业春季求职科普攻略清新感小红书封面",
+                userId: "9019656041015689283",
+                userName: "蒜鸟",
+                downloadCount: 34
+            },
+            {
+                contentId: "196037926",
+                contentName: "蓝绿色趣味感企业春季招聘小红书封面",
+                userId: "9019656041015689283",
+                userName: "蒜鸟",
+                downloadCount: 18
+            },
+            {
+                contentId: "196175479",
+                contentName: "OpenClaw养龙虾AI知识科普吸睛大字小红书封面",
+                userId: "9019656041015689283",
+                userName: "蒜鸟",
+                downloadCount: 9
+            },
+            {
+                contentId: "196193464",
+                contentName: "AI智能体知识科普养龙虾攻略分享人像小红书封面",
+                userId: "9019656041015689283",
+                userName: "蒜鸟",
+                downloadCount: 5
+            },
+            {
+                contentId: "196028174",
+                contentName: "商场百货公司营销活动早春福利活动宣传朋友圈海报",
+                userId: "9019656041015689283",
+                userName: "蒜鸟",
+                downloadCount: 4
+            }
+        ];
+
+        function search() {
+            const userId = document.getElementById('userId').value.trim();
+            const resultBox = document.getElementById('resultBox');
+            const resultContent = document.getElementById('resultContent');
+
+            if (!userId) {
+                alert('请输入用户ID');
+                return;
+            }
+
+            // 筛选该用户的数据，按下载次数降序排序，取前10个
+            const results = data
+                .filter(item => item.userId === userId)
+                .sort((a, b) => b.downloadCount - a.downloadCount)
+                .slice(0, 10);
+
+            if (results.length === 0) {
+                resultContent.innerHTML = `
+                    <div class="no-result">
+                        <div class="no-result-icon">😕</div>
+                        <div>未找到该用户的下载记录</div>
+                        <div style="font-size: 12px; margin-top: 10px;">请检查用户ID是否正确</div>
+                    </div>
+                `;
+            } else {
+                // 显示结果 - 网格布局（按下载次数排序，但不显示下载次数）
+                resultContent.innerHTML = `
+                    <div style="margin-bottom: 15px; color: #666; font-size: 14px;">
+                        找到 ${results.length} 条记录
+                    </div>
+                    <div class="results-grid">
+                        ${results.map((item, index) => `
+                            <div class="result-card">
+                                <div style="text-align: center; margin-bottom: 15px;">
+                                    <span style="display: inline-block; width: 30px; height: 30px; line-height: 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 50%; font-weight: bold; font-size: 14px;">${index + 1}</span>
+                                </div>
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <div class="label">内容ID</div>
+                                        <div class="value" style="font-size: 12px; word-break: break-all;">${item.contentId}</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="label">内容名称</div>
+                                        <div class="value" style="font-size: 13px;">${item.contentName}</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="label">上线天数</div>
+                                        <div class="value">${item.publishDays} 天</div>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            resultBox.classList.add('show');
+        }
+
+        // 支持回车键查询
+        document.getElementById('userId').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') search();
+        });
+    </script>
+</body>
+</html>
