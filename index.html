@@ -233,7 +233,7 @@
             
             <div class="tips">
                 <strong>💡 提示</strong>
-                请输入稿定ID查询该用户下载次数最高的前10个内容。
+                请输入您的稿定ID可查询下载次数最高的前10个内容。
             </div>
         </div>
 
@@ -20110,14 +20110,21 @@
                                 </div>
                                 <div class="info-grid">
                                     <div class="info-item">
-                                        <div class="label">内容ID</div>
+                                        <div class="label">昵称</div>
+                                        <div class="value" style="font-size: 10px;">${item.userName}</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="label">作品ID</div>
                                         <div class="value" style="font-size: 10px; word-break: break-all;">${item.contentId}</div>
                                     </div>
                                     <div class="info-item">
-                                        <div class="label">内容名称</div>
+                                        <div class="label">作品名称</div>
                                         <div class="value" style="font-size: 11px; line-height: 1.3;">${item.contentName}</div>
                                     </div>
-
+                                    <div class="info-item">
+                                        <div class="label">下载次数</div>
+                                        <div class="value" style="font-size: 10px;">${item.downloadCount}</div>
+                                    </div>
                                 </div>
                             </div>
                         `).join('')}
