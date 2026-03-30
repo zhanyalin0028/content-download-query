@@ -237,10 +237,10 @@
             <div class="section">
                 <div class="section-title">📥 输入CSV数据</div>
                 <div class="form-group">
-                    <label>CSV数据（支持 内容ID,内容名称,用户ID,用户名称,下载次数 格式）</label>
-                    <textarea id="csvInput" placeholder="作品id,作品名称,用户id,用户名称,下载次数
-195740984,金融理财知识科普宣传小红书封面,9012058202050790438,九日,26
-195951837,金融理财存钱小红书大字封面,9012058202050790438,九日,12"></textarea>
+                    <label>CSV数据（支持 作品id,作品名称,用户id,用户昵称,总下载用户数,上周下载用户数 格式）</label>
+                    <textarea id="csvInput" placeholder="作品id,作品名称,用户id,用户昵称,总下载用户数,上周下载用户数
+195740984,金融理财知识科普宣传小红书封面,9012058202050790438,九日,26,10
+195951837,金融理财存钱小红书大字封面,9012058202050790438,九日,12,5"></textarea>
                 </div>
                 <div class="btn-group">
                     <button class="btn btn-primary" onclick="convertData()">🔄 转换数据</button>
@@ -324,14 +324,16 @@
                     // 解析CSV行（处理引号内的逗号）
                     const values = parseCSVLine(line);
                     
-                    if (values.length >= 5) {
+                    if (values.length >= 6) {
                         const downloadCount = parseInt(values[4]) || 0;
+                        const lastWeekDownloadCount = parseInt(values[5]) || 0;
                         const item = {
                             contentId: values[0].trim(),
                             contentName: values[1].trim(),
                             userId: values[2].trim(),
                             userName: values[3].trim(),
-                            downloadCount: downloadCount
+                            downloadCount: downloadCount,
+                            lastWeekDownloadCount: lastWeekDownloadCount
                         };
                         
                         data.push(item);
@@ -394,10 +396,10 @@
                 contentName: "${item.contentName}",
                 userId: "${item.userId}",
                 userName: "${item.userName}",
-                downloadCount: ${item.downloadCount}
+                downloadCount: ${item.downloadCount},
+                lastWeekDownloadCount: ${item.lastWeekDownloadCount}
             }${isLast ? '' : ','}`;
             });
-            
             return `const data = [
 ${lines.join('\n')}
         ];`;
@@ -412,11 +414,11 @@ ${lines.join('\n')}
 
         // 加载示例
         function loadExample() {
-            const example = `作品id,作品名称,用户id,用户名称,下载次数
-195740984,金融理财知识科普宣传小红书封面,9012058202050790438,九日,26
-195951837,金融理财存钱小红书大字封面,9012058202050790438,九日,12
-195990542,春天野餐风促销活动小红书封面,9012058202050790438,九日,18
-195955759,春日宠粉抽奖小红书封面,9012058202050790438,九日,52`;
+            const example = `作品id,作品名称,用户id,用户昵称,总下载用户数,上周下载用户数
+195740984,金融理财知识科普宣传小红书封面,9012058202050790438,九日,26,10
+195951837,金融理财存钱小红书大字封面,9012058202050790438,九日,12,5
+195990542,春天野餐风促销活动小红书封面,9012058202050790438,九日,18,8
+195955759,春日宠粉抽奖小红书封面,9012058202050790438,九日,52,20`;
             document.getElementById('csvInput').value = example;
             showMessage('已加载示例数据，点击"转换数据"查看效果', 'success');
         }
